@@ -21,9 +21,25 @@ spadd.presmth.Legr(X, Y, d.pre, lambda, eta, n.foi, K = 1)
 
 \item{K}{the order of the Legendre polynomials. E.g. \code{K=0} fits piecwise constant, \code{K=1} fits piecewise linear functions.}
 }
+\value{
+a list with the fitted functions etc.
+}
 \description{
 Fit the desparsified lasso presmoothing estimator with Legendre polynomials
 }
 \examples{
-r <- .5
+data <- data_gen(n = 100,
+                 q = 10,
+                 r = .5)
+
+spadd.presmth.Legr.out <- spadd.presmth.Legr(X = data$X,
+                                             Y = data$Y,
+                                             d.pre = 10,
+                                             lambda = .1,
+                                             eta = 2,
+                                             n.foi = 6,
+                                             K = 1)
+
+plot_presmth_Legr(x = spadd.presmth.Legr.out,
+                  true.functions = list( f = data$f, X = data$X))
 }

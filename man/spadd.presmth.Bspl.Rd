@@ -9,7 +9,7 @@ spadd.presmth.Bspl(X, Y, d.pre, lambda, eta, n.foi)
 \arguments{
 \item{X}{the design matrix}
 
-\item{Y}{the response vector}
+\item{Y}{the response vector (centered)}
 
 \item{d.pre}{the number of intervals in which to divide the support of each covariate}
 
@@ -19,45 +19,23 @@ spadd.presmth.Bspl(X, Y, d.pre, lambda, eta, n.foi)
 
 \item{n.foi}{the number of functions (first columns of \code{X} on which to compute the desparsified lasso presmoothing estimator.}
 }
+\value{
+a list with the fitted functions etc
+}
 \description{
 Fit the desparsified lasso presmoothing estimator with cubic B-splines
 }
 \examples{
-# set parameters
-r <- .5
-n <- 100
-q <- 10
-d.pre <- max(30,floor(2 * sqrt(n)))
-n.foi <- 6
-lambda <- 4
-eta <- 3
+data <- data_gen(n = 200, q = 10, r = .5)
 
-f1 <- function(x){-sin(x*2)}
-f2 <- function(x){x^2 - 25/12}
-f3 <- function(x){x}
-f4 <- function(x){exp(-x)-2/5*sinh(5/2)}
-f5 <- function(x){x*0}
-f6 <- function(x){x*0}
+spadd.presmth.Bspl.out <- spadd.presmth.Bspl(X = data$X,
+                                             Y = data$Y,
+                                             d.pre = 20,
+                                             lambda = 1,
+                                             eta = 3,
+                                             n.foi = 6)
 
-# generate data
-X <- getX(n,q,r)$X
-signal.uncent <- cbind( f1(X[,1]),f2(X[,2]),f3(X[,3]),f4(X[,4]),f5(X[,5]),f6(X[,6]) )
-signal.means <- apply(signal.uncent,2,mean)
-signal <- signal.uncent - matrix(signal.means,n,6,byrow=TRUE)
-noise <- rnorm(n)
-Y <- apply(signal,1,sum) + noise - mean(noise)
-spadd.presmth.Bspl.out <- spadd.presmth.Bspl(X,Y,d.pre,lambda,eta,n.foi)
-f.hat <- spadd.presmth.Bspl.out$f.hat
-
-# plot output
-par(mfrow=c(2,3))
-for( j in 1:6){
-
-  plot(f.hat[[j]],min(X[,j]),max(X[,j]))
-
-  x.seq <- seq(min(X[,j]),max(X[,j]),length=300)
-  fj <- f[[j]](x.seq) - mean(f[[j]](X[,j])) # must center the true function in order to make comparisons
-  lines(fj~x.seq,lty=2)
-
-}
+plot_presmth_Bspl(spadd.presmth.Bspl.out,
+                  true.functions = list( f = data$f,
+                                         X = data$X))
 }
