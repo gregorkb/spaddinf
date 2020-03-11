@@ -1,12 +1,12 @@
 Package: spaddinf
 Type: Package
-Title: What the Package Does (Title Case)
+Title: Fit two-step estimator for inference in sparse high-dimensional additive models
 Version: 0.1.0
-Author: Who wrote it
-Maintainer: The package maintainer <yourself@somewhere.net>
-Description: More about what it does (maybe more than one line)
-    Use four spaces when indenting paragraphs within the Description.
+Author: Karl Gregory, Enno Mammen, Martin Wahl
+Maintainer: Karl Gregory <gregorkb@stat.sc.edu>
+Description: Compute two-step presmoothing and resmoothing estimator for inference in sparse high-dimensional additive models, where the presmoothing estimator is a nonparametric version of the so-called desparsified lasso estimator.
 License: What license is it under?
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 6.0.1
+Depends: splines, grplasso
