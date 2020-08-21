@@ -4,8 +4,16 @@
 \alias{spadd.presmth.Legr.cv}
 \title{Choose tuning parameters for fitting the desparsified lasso presmoothing estimator with Legendre polynomials}
 \usage{
-spadd.presmth.Legr.cv(X, Y, d.pre, K = 1, n.lambda, n.eta, n.folds,
-  plot = FALSE)
+spadd.presmth.Legr.cv(
+  X,
+  Y,
+  d.pre,
+  K = 1,
+  n.lambda,
+  n.eta,
+  n.folds,
+  plot = FALSE
+)
 }
 \arguments{
 \item{X}{the design matrix}

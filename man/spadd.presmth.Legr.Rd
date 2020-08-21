@@ -17,7 +17,7 @@ spadd.presmth.Legr(X, Y, d.pre, lambda, eta, n.foi, K = 1)
 
 \item{eta}{the tuning parameter for the group lasso projection of one set of basis functions onto those of the other covariates.}
 
-\item{n.foi}{the number of functions (first columns of \code{X} on which to compute the desparsified lasso presmoothing estimator.}
+\item{n.foi}{the number of functions (first columns of \code{X}) for which to compute the desparsified lasso presmoothing estimator.}
 
 \item{K}{the order of the Legendre polynomials. E.g. \code{K=0} fits piecwise constant, \code{K=1} fits piecewise linear functions.}
 }
@@ -28,9 +28,7 @@ a list with the fitted functions etc.
 Fit the desparsified lasso presmoothing estimator with Legendre polynomials
 }
 \examples{
-data <- data_gen(n = 100,
-                 q = 10,
-                 r = .5)
+data <- data_gen(n = 100,q = 10,r = .5)
 
 spadd.presmth.Legr.out <- spadd.presmth.Legr(X = data$X,
                                              Y = data$Y,

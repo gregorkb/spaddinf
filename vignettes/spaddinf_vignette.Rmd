@@ -1,0 +1,147 @@
+---
+title: "Overview of the spaddinf package"
+author: "Karl Gregory"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Overview of the spaddinf package}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+This vignette demonstrates the use of some functions in the package `spaddinf`, which accompanies the paper *Inference in sparse high-dimensional additive models* by Karl Gregory, Enno Mammen, and Martin Wahl.  The paper considers estimation and inference in the model
+
+$$
+Y = f_1(X_1) + \dots + f_q(X_q) + \varepsilon,
+$$
+where we assume $\mathbb{E} Y = 0$ and $\mathbb{E}f_j(X_j) = 0$ for all $j = 1,\dots,q$.  
+
+The estimator of $f_j$ is constructed in two steps: 
+
+  - First, an undersmoothed presmoothing estimator $\hat{f}_j^{(\text{pre})}$ of $f_j$ is obtained.
+  - Second, a less-wiggly smoother is applied to the evaluations of $\hat f_j^{\text{(pre)}}$ at the design points.
+
+## Pre-smoother functions
+
+The two functions `spadd.presmth.Bspl` and `spadd.presmth.Legr` are for obtaining the presmoothing estimators; they construct the presmoothing estimators from cubic B-spline and Legendre polynomial bases, respectively.
+
+It is computationally expensive to compute the presmoothing estimator $\hat f_j^{(\text{pre})}$ for all $j = 1,\dots,q$ when $q$ is large.  Therefore, both of these functions take an argument `n.foi` with which the user may specify the _number of functions of interest_ for which to obtain the presmoothing estimator.  For example, `n.foi = 5` will cause the presmoothing estimators for the first 5 components (corresponding to the first 5 columns of the design matrix) to be returned.
+
+The following code uses the function `data_gen` to generate data according to the simulation design in Gregory et al. (2020) and then obtains the presmoothing estimators for the first 6 components.  The argument `d.pre` is the number of basis functions to be used for fitting each component.  The arguments `lambda` and `eta` are for the tuning parameters $\lambda$ and $\eta$ from the paper.
+
+The output is plotted with the function `plot_presmth_Bspl`. 
+
+```{r}
+library(spaddinf)
+
+# generate some data as in Gregory et al. (2020)
+data <- data_gen(n = 200, q = 10, r = .5)
+
+# obtain presmoothing estimators for first 6 components
+spadd.presmth.Bspl.out <- spadd.presmth.Bspl(X = data$X,
+                                             Y = data$Y,
+                                             d.pre = 20,
+                                             lambda = 1,
+                                             eta = 3,
+                                             n.foi = 6)
+# make plots
+plot_presmth_Bspl(spadd.presmth.Bspl.out,
+                 true.functions = list( f = data$f,
+                                        X = data$X))
+```
+
+The following code does the same as the previous code, but constructs the presmoothing estimators from Legendre polynomial bases. Note the additional argument `K` for choosing the order of the Legendre polynomials; the default is `K=1`, which results in piecewise linear functions.
+
+```{r}
+# obtain presmoothing estimators for first 6 components
+spadd.presmth.Legr.out <- spadd.presmth.Legr(X = data$X,
+                                             Y = data$Y,
+                                             d.pre = 20,
+                                             lambda = 1,
+                                             eta = 3,
+                                             n.foi = 6,
+                                             K = 1)
+# make plots
+plot_presmth_Legr(spadd.presmth.Legr.out,
+                 true.functions = list( f = data$f,
+                                        X = data$X))
+```
+
+## Cross-validation for pre-smoother
+
+The functions `spadd.presmth.Bspl.cv` and `spadd.presmth.Legr.cv` make choices of the tuning parameters $\lambda$ and $\eta$ from grids of values, while constructing the presmoothing estimators from cubic B-spline and Legendre polynomial bases, respectively.
+
+Rather than searching over a 2-dimensional grid for the best $(\lambda,\eta)$ pair, these functions first select $\lambda$ in order to minimize crossvalidation prediction error for $\hat f_1^L + \dots + \hat f_q^L$ (see section 3.1 of the paper), and then select $\eta$ by minimizing the average crossvalidation prediction error for $\hat{\Pi}^L_{-1}b_{j1},\dots,\hat{\Pi}^L_{-1}b_{jd}$, where $d$ is `d.pre`, the number of basis functions (see Section 3.3 of the paper). To reduce computation time, $\eta$ is only chosen for $j = 1$ (this could be easily changed in the code).
+
+The user specifies by the arguments `n.lambda` and `n.eta` the number of $\lambda$ and $\eta$ values to consider.  Grids of values are constructed on a logarithmic scale (see code).
+
+
+The following code generates data according to the simulation design in Gregory et al. (2020) and uses the function `spadd.presmth.Bspl.cv` to choose $\lambda$ and $\eta$ using crossvalidation for the cubic B-spline presmoother.  The crossvalidation code takes a couple of minutes to run.  The values chosen in crossvalidation are then given to the function `spadd.presmth.Bspl` so that the presmoothing estimator can be obtained.  Some plots of the output are generated.
+
+```{r, eval = TRUE}
+# generate some data as in Gregory et al. (2020)
+data <- data_gen(n = 150,q = 30,r = .9)
+
+# get CV choices of lambda and eta: takes a couple of minutes to run
+spadd.presmth.Bspl.cv.out <- spadd.presmth.Bspl.cv(X = data$X,
+                                                   Y = data$Y,
+                                                   d.pre = 15,
+                                                   n.lambda = 25,
+                                                   n.eta = 25,
+                                                   n.folds = 5,
+                                                   plot = TRUE)
+
+# obtain presmoothing estimators for first 6 components                                                    
+spadd.presmth.Bspl.out <- spadd.presmth.Bspl(X = data$X,
+                                             Y = data$Y,
+                                             d.pre = 20,
+                                             lambda = spadd.presmth.Bspl.cv.out$cv.lambda,
+                                             eta = spadd.presmth.Bspl.cv.out$cv.eta,
+                                             n.foi = 6)
+# make plots
+plot_presmth_Bspl(spadd.presmth.Bspl.out)
+```
+
+
+## Two-step estimator
+
+The functions `spadd.presmth.Bspl.Bspl` and `spadd.presmth.Legr.Bspl` compute the two-step estimators when the presmoothers are constructed with cubic B-spline and Legendre polynomial bases, respectively, with the resmoothers constructed from cubic B-spline bases.
+
+The user provides `d.pre`, which is as before, and, optionally, `d.re`, which is the number of functions in the bases used for resmoothing.  If `d.re = NULL`, then this is chosen using a crossvalidation procedure.  Values of $\lambda$ and $\eta$ for constructing the presmoothers must be provided.  Setting `plot = TRUE` produces plots of each resmoother with $(1 - \alpha)100\%$ pointwise confidence intervals of the form in equation (14) of the paper, where $\alpha$ is specified by the argument `alpha`. The red circles in the plots are the values of the presmoothing estimators at the design points.
+
+The code below demonstrates this.
+
+```{r}
+# generate some data as in Gregory et al. (2020)
+data <- data_gen(n = 200, q = 50, r = .9)
+
+# get two-step estimator with B-spline presmoother and B-spline resmoother
+preresmth.Bspl.Bspl.out <- preresmth.Bspl.Bspl(Y = data$Y,
+                                               X = data$X,
+                                               d.pre = 20,
+                                               d.re = 10,
+                                               lambda = 1,
+                                               eta = 3,
+                                               n.foi = 2,
+                                               plot = TRUE,
+                                               alpha = 0.05)
+
+# get two-step estimator with Legendre polynomial presmoother and B-spline resmoother
+preresmth.Legr.Bspl.out <- preresmth.Legr.Bspl(Y = data$Y,
+                                               X = data$X,
+                                               d.pre = 20,
+                                               d.re = 10,
+                                               lambda = 1,
+                                               eta = 3,
+                                               n.foi = 2,
+                                               plot = TRUE,
+                                               alpha = 0.05)
+```
+

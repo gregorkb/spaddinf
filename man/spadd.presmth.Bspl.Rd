@@ -17,10 +17,10 @@ spadd.presmth.Bspl(X, Y, d.pre, lambda, eta, n.foi)
 
 \item{eta}{the tuning parameter for the group lasso projection of one set of basis functions onto those of the other covariates.}
 
-\item{n.foi}{the number of functions (first columns of \code{X} on which to compute the desparsified lasso presmoothing estimator.}
+\item{n.foi}{the number of functions (first columns of \code{X}) for which to compute the desparsified lasso presmoothing estimator.}
 }
 \value{
-a list with the fitted functions etc
+a list with the fitted functions etc.
 }
 \description{
 Fit the desparsified lasso presmoothing estimator with cubic B-splines

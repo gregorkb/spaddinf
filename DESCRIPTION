@@ -8,5 +8,7 @@ Description: Compute two-step presmoothing and resmoothing estimator for inferen
 License: What license is it under?
 Encoding: UTF-8
 LazyData: true
-RoxygenNote: 6.0.1
+RoxygenNote: 7.1.1
 Depends: splines, grplasso
+Suggests: knitr, rmarkdown
+VignetteBuilder: knitr

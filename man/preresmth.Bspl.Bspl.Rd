@@ -4,8 +4,17 @@
 \alias{preresmth.Bspl.Bspl}
 \title{Fit two step estimator with B-splines in the first step and B-splines in the second step}
 \usage{
-preresmth.Bspl.Bspl(X, Y, d.pre, lambda, eta, n.foi, x, plot = FALSE,
-  alpha = 0.05)
+preresmth.Bspl.Bspl(
+  X,
+  Y,
+  d.pre,
+  d.re = NULL,
+  lambda,
+  eta,
+  n.foi,
+  plot = FALSE,
+  alpha = 0.05
+)
 }
 \arguments{
 \item{X}{the design matrix}
@@ -14,11 +23,13 @@ preresmth.Bspl.Bspl(X, Y, d.pre, lambda, eta, n.foi, x, plot = FALSE,
 
 \item{d.pre}{the number of intervals in which to divide the support of each covariate}
 
+\item{d.re}{the number of intervals in which to divide the support of each covariate for the resmoother}
+
 \item{lambda}{the tuning parameter for fitting the group lasso estimate for the bias correction}
 
 \item{eta}{the tuning parameter for the group lasso projection of one set of basis functions onto those of the other covariates.}
 
-\item{n.foi}{the number of functions (first columns of \code{X} on which to compute the desparsified lasso presmoothing estimator.}
+\item{n.foi}{the number of functions (first columns of \code{X}) for which to compute the desparsified lasso presmoothing estimator.}
 
 \item{x}{a sequence of values at which the final estimators should be evaluated}
 
@@ -36,9 +47,9 @@ data <- data_gen(n = 200, q = 50, r = .9)
 preresmth.Bspl.Bspl.out <- preresmth.Bspl.Bspl(Y = data$Y,
                                                X = data$X,
                                                d.pre = 20,
+                                               d.re = 10,
                                                lambda = 5,
                                                eta = 3,
                                                n.foi = 6,
-                                               x = seq(-2,2,length=201),
-                                               K = 1)
+                                               alpha = 0.05)
 }

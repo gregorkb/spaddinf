@@ -15,8 +15,8 @@ pcws.poly <- function(x,left.endpoints,K){
 #' @param d.pre the number of intervals in which to divide the support of each covariate
 #' @param lambda the tuning parameter for fitting the group lasso estimate for the bias correction
 #' @param eta the tuning parameter for the group lasso projection of one set of basis functions onto those of the other covariates.
-#' @param n.foi the number of functions (first columns of \code{X} on which to compute the desparsified lasso presmoothing estimator.
-#' @return a list with the fitted functions etc
+#' @param n.foi the number of functions (first columns of \code{X}) for which to compute the desparsified lasso presmoothing estimator.
+#' @return a list with the fitted functions etc.
 #' @examples
 #' data <- data_gen(n = 200, q = 10, r = .5)
 #'
@@ -172,14 +172,12 @@ spadd.presmth.Bspl <- function(X,Y,d.pre,lambda,eta,n.foi)
 #' @param d.pre the number of intervals in which to divide the support of each covariate
 #' @param lambda the tuning parameter for fitting the group lasso estimate for the bias correction
 #' @param eta the tuning parameter for the group lasso projection of one set of basis functions onto those of the other covariates.
-#' @param n.foi the number of functions (first columns of \code{X} on which to compute the desparsified lasso presmoothing estimator.
+#' @param n.foi the number of functions (first columns of \code{X}) for which to compute the desparsified lasso presmoothing estimator.
 #' @param K the order of the Legendre polynomials. E.g. \code{K=0} fits piecwise constant, \code{K=1} fits piecewise linear functions.
 #' @return a list with the fitted functions etc.
 #'
 #' @examples
-#' data <- data_gen(n = 100,
-#'                  q = 10,
-#'                  r = .5)
+#' data <- data_gen(n = 100,q = 10,r = .5)
 #'
 #' spadd.presmth.Legr.out <- spadd.presmth.Legr(X = data$X,
 #'                                              Y = data$Y,
@@ -518,7 +516,7 @@ spadd.presmth.Bspl.cv <- function(X,Y,d.pre,n.lambda,n.eta,n.folds,plot = FALSE)
   if(plot == TRUE)
   {
 
-    par(mfrow=c(1,2))
+    # par(mfrow=c(1,2))
 
     plot(cv.MSEPs.lambda~log(lambda.seq),ylim=range(cv.MSEPs.lambda))
     abline(v = log(cv.lambda))
@@ -728,7 +726,7 @@ spadd.presmth.Legr.cv <- function(X,Y,d.pre,K = 1,n.lambda,n.eta,n.folds,plot = 
   if(plot == TRUE)
   {
 
-    par(mfrow=c(1,2))
+    # par(mfrow=c(1,2))
 
     plot(cv.MSEPs.lambda~log(lambda.seq),ylim=range(cv.MSEPs.lambda))
     abline(v = log(cv.lambda))
@@ -802,7 +800,7 @@ resmth.Bspl <- function(Y,X,d,AAt,sigma.hat,plot = FALSE,x = NULL,alpha = 0.05)
   if(plot == TRUE)
   {
 
-    plot(Y ~ X)
+    plot(Y ~ X, col = rgb(0.545,0,0,1))
     lines(f.hat.x ~ x,lwd=1.5,col=rgb(0,0,.545))
 
     x.poly <- c(x,x[length(x):1])
@@ -927,9 +925,10 @@ Bspl.cv  <- function(Y,X,d.seq, n.folds, plot = FALSE)
 #' @param Y the response vector (centered)
 #' @param X the design matrix
 #' @param d.pre the number of intervals in which to divide the support of each covariate
+#' @param d.re the number of intervals in which to divide the support of each covariate for the resmoother
 #' @param lambda the tuning parameter for fitting the group lasso estimate for the bias correction
 #' @param eta the tuning parameter for the group lasso projection of one set of basis functions onto those of the other covariates.
-#' @param n.foi the number of functions (first columns of \code{X} on which to compute the desparsified lasso presmoothing estimator.
+#' @param n.foi the number of functions (first columns of \code{X}) for which to compute the desparsified lasso presmoothing estimator.
 #' @param x a sequence of values at which the final estimators should be evaluated
 #' @param K the order of the Legendre polynomials. E.g. \code{K=0} fits piecwise constant, \code{K=1} fits piecewise linear functions.
 #' @return a list with the fitted functions and pointwise confidence intervals
@@ -940,13 +939,13 @@ Bspl.cv  <- function(Y,X,d.seq, n.folds, plot = FALSE)
 #' preresmth.Bspl.Bspl.out <- preresmth.Bspl.Bspl(Y = data$Y,
 #'                                                X = data$X,
 #'                                                d.pre = 20,
+#'                                                d.re = 10,
 #'                                                lambda = 5,
 #'                                                eta = 3,
 #'                                                n.foi = 6,
-#'                                                x = seq(-2,2,length=201),
-#'                                                K = 1)
+#'                                                alpha = 0.05)
 #' @export
-preresmth.Bspl.Bspl <- function(X,Y,d.pre,lambda,eta,n.foi,x,plot=FALSE,alpha = 0.05)
+preresmth.Bspl.Bspl <- function(X,Y,d.pre,d.re = NULL,lambda,eta,n.foi,plot=FALSE,alpha = 0.05)
 {
 
   spadd.presmth.Bspl.out <- spadd.presmth.Bspl(X = X,
@@ -956,8 +955,25 @@ preresmth.Bspl.Bspl <- function(X,Y,d.pre,lambda,eta,n.foi,x,plot=FALSE,alpha = 
                                                eta = eta,
                                                n.foi = n.foi)
 
-  f.hat.x <- CIl.x <- CIu.x <- matrix(0,length(x),n.foi)
+  f.hat.x <- CIl.x <- CIu.x <- matrix(0,200,n.foi)
   cv.d <- numeric(n.foi)
+  xx <- matrix(0,200,n.foi)
+
+  if(length(d.re) == 0){
+
+
+    d[j] <- Bspl.cv(Y = spadd.presmth.Bspl.out$f.hat.design[,j],
+                       X = X[,j],
+                       d.seq = 5:floor(d.pre*7/8),
+                       n.folds = 5,
+                       plot = FALSE)
+
+  } else {
+
+    d <- rep(d.re,n.foi)
+
+  }
+
 
   for(j in 1:n.foi)
   {
@@ -968,13 +984,15 @@ preresmth.Bspl.Bspl <- function(X,Y,d.pre,lambda,eta,n.foi,x,plot=FALSE,alpha = 
                        n.folds = 5,
                        plot = FALSE)
 
+    xx[,j] <- seq(min(X[,j]),max(X[,j]),length = 200)
+
     resmth.Bspl.out <- resmth.Bspl(Y = spadd.presmth.Bspl.out$f.hat.design[,j],
                                    X = X[,j],
-                                   d = cv.d[j],
+                                   d = d[j],
                                    AAt = spadd.presmth.Bspl.out$AAt[[j]],
                                    sigma.hat = spadd.presmth.Bspl.out$sigma.hat[j],
                                    plot = plot,
-                                   x = x,
+                                   x = xx[,j],
                                    alpha = alpha)
 
     f.hat.x[,j] <- resmth.Bspl.out$f.hat.x
@@ -986,9 +1004,9 @@ preresmth.Bspl.Bspl <- function(X,Y,d.pre,lambda,eta,n.foi,x,plot=FALSE,alpha = 
   output <- list( f.hat.x = f.hat.x,
                   CIl.x = CIl.x,
                   CIu.x = CIu.x,
-                  x = x,
+                  x = xx,
                   sigma.hat = spadd.presmth.Bspl.out$sigma.hat,
-                  cv.d = cv.d,
+                  d = d,
                   alpha = alpha
   )
 
@@ -1004,7 +1022,7 @@ preresmth.Bspl.Bspl <- function(X,Y,d.pre,lambda,eta,n.foi,x,plot=FALSE,alpha = 
 #' @param d.pre the number of intervals in which to divide the support of each covariate
 #' @param lambda the tuning parameter for fitting the group lasso estimate for the bias correction
 #' @param eta the tuning parameter for the group lasso projection of one set of basis functions onto those of the other covariates.
-#' @param n.foi the number of functions (first columns of \code{X} on which to compute the desparsified lasso presmoothing estimator.
+#' @param n.foi the number of functions (first columns of \code{X}) for which to compute the desparsified lasso presmoothing estimator.
 #' @param x a sequence of values at which the final estimators should be evaluated
 #' @param K the order of the Legendre polynomials. E.g. \code{K=0} fits piecwise constant, \code{K=1} fits piecewise linear functions.
 #' @return a list with the fitted functions and pointwise confidence intervals
@@ -1015,13 +1033,14 @@ preresmth.Bspl.Bspl <- function(X,Y,d.pre,lambda,eta,n.foi,x,plot=FALSE,alpha = 
 #' preresmth.Legr.Bspl.out <- preresmth.Legr.Bspl(Y = data$Y,
 #'                                                X = data$X,
 #'                                                d.pre = 20,
+#'                                                d.re = 10,
 #'                                                lambda = 5,
 #'                                                eta = 3,
 #'                                                n.foi = 6,
-#'                                                x = seq(-2,2,length=201),
-#'                                                K = 1)
+#'                                                plot = TRUE,
+#'                                                alpha = 0.05)
 #' @export
-preresmth.Legr.Bspl <- function(X,Y,d.pre,lambda,eta,n.foi,x,K,plot=FALSE,alpha = 0.05)
+preresmth.Legr.Bspl <- function(X,Y,d.pre,d.re = NULL,lambda,eta,n.foi,plot=FALSE,alpha = 0.05)
 {
 
   spadd.presmth.Legr.out <- spadd.presmth.Legr(X = X,
@@ -1029,28 +1048,46 @@ preresmth.Legr.Bspl <- function(X,Y,d.pre,lambda,eta,n.foi,x,K,plot=FALSE,alpha 
                                                d.pre = d.pre,
                                                lambda = lambda,
                                                eta = eta,
-                                               n.foi = n.foi,
-                                               K = 1)
+                                               n.foi = n.foi)
 
-  f.hat.x <- CIl.x <- CIu.x <- matrix(0,length(x),n.foi)
+  f.hat.x <- CIl.x <- CIu.x <- matrix(0,200,n.foi)
   cv.d <- numeric(n.foi)
+  xx <- matrix(0,200,n.foi)
+
+  if(length(d.re) == 0){
+
+
+    d[j] <- Bspl.cv(Y = spadd.presmth.Legr.out$f.hat.design[,j],
+                    X = X[,j],
+                    d.seq = 5:floor(d.pre*7/8),
+                    n.folds = 5,
+                    plot = FALSE)
+
+  } else {
+
+    d <- rep(d.re,n.foi)
+
+  }
+
 
   for(j in 1:n.foi)
   {
 
-    cv.d[j] <- Bspl.cv(Y = spadd.presmth.Legr.out$Y.lasso[,j],
+    cv.d[j] <- Bspl.cv(Y = spadd.presmth.Legr.out$f.hat.design[,j],
                        X = X[,j],
                        d.seq = 5:floor(d.pre*7/8),
                        n.folds = 5,
                        plot = FALSE)
 
+    xx[,j] <- seq(min(X[,j]),max(X[,j]),length = 200)
+
     resmth.Bspl.out <- resmth.Bspl(Y = spadd.presmth.Legr.out$f.hat.design[,j],
                                    X = X[,j],
-                                   d = cv.d[j],
+                                   d = d[j],
                                    AAt = spadd.presmth.Legr.out$AAt[[j]],
                                    sigma.hat = spadd.presmth.Legr.out$sigma.hat[j],
                                    plot = plot,
-                                   x = x,
+                                   x = xx[,j],
                                    alpha = alpha)
 
     f.hat.x[,j] <- resmth.Bspl.out$f.hat.x
@@ -1062,9 +1099,9 @@ preresmth.Legr.Bspl <- function(X,Y,d.pre,lambda,eta,n.foi,x,K,plot=FALSE,alpha 
   output <- list( f.hat.x = f.hat.x,
                   CIl.x = CIl.x,
                   CIu.x = CIu.x,
-                  x = x,
+                  x = xx,
                   sigma.hat = spadd.presmth.Legr.out$sigma.hat,
-                  cv.d = cv.d,
+                  d = d,
                   alpha = alpha
   )
 
@@ -1208,8 +1245,13 @@ plot_presmth_Bspl <- function(x, true.functions = NULL)
     xj.min <- min(knots.list[[j]]) + 1e-2
     xj.max <- max(knots.list[[j]]) - 1e-2
 
-    plot(NA,ylim = range(f.hat.design),xlim=c(xj.min,xj.max),ylab="",xlab="")
-    plot(f.hat[[j]],min(xj.min),max(xj.max),add=TRUE)
+    plot(NA,
+         ylim = range(f.hat.design),
+         xlim=c(xj.min,xj.max),
+         ylab="",
+         xlab="")
+
+    plot(f.hat[[j]],min(xj.min),max(xj.max),col=rgb(.545,0,0,1),add=TRUE)
 
     if(length(true.functions)!=0)
     {
@@ -1234,13 +1276,7 @@ plot_presmth_Legr <- function(x,true.functions = NULL)
   left.endpoints.list <- x$left.endpoints.list
   maxima <- x$maxima
 
-  par(mfrow = c(2,3),
-      oma = c(2.1,3,2.1,.1),
-      mar = c(0,0,0,0),
-      lwd = 1,
-      cex.axis = .8,
-      cex.lab = .85,
-      tck = -.01)
+  par(mfrow=c(2,3),mar=c(2.1,2.1,1.1,1.1))
 
   for( j in 1:6)
   {
@@ -1254,9 +1290,7 @@ plot_presmth_Legr <- function(x,true.functions = NULL)
          xlim=c(xj.min,maxima[j]),
          ylim=range(f.hat.design),
          xlab="",
-         ylab="",
-         xaxt="n",
-         yaxt="n")
+         ylab="")
 
     # points(f.hat.design[order(X[,j]),j]~sort(X[,j]))
     # plot each fitted Legendre polynomial function
