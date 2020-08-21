@@ -84,7 +84,7 @@ spadd.presmth.Bspl <- function(X,Y,d.pre,lambda,eta,n.foi)
   lasso.fitted.values <- grplasso.out$fitted
   selected <- grplasso.out$norms.pen != 0
 
-  f.hat.design <- matrix(NA,nrow(X),n.foi)
+  Y.lasso <- f.hat.design <- matrix(NA,nrow(X),n.foi)
   f.hat <- vector("list",n.foi)
   AAt <- vector("list",n.foi)
   sigma.hat <- numeric(n.foi)
@@ -964,7 +964,7 @@ preresmth.Bspl.Bspl <- function(X,Y,d.pre,lambda,eta,n.foi,x,plot=FALSE,alpha = 
 
     cv.d[j] <- Bspl.cv(Y = spadd.presmth.Bspl.out$f.hat.design[,j],
                        X = X[,j],
-                       d.seq = 3:floor(d.pre*7/8),
+                       d.seq = 5:floor(d.pre*7/8),
                        n.folds = 5,
                        plot = FALSE)
 
@@ -1040,7 +1040,7 @@ preresmth.Legr.Bspl <- function(X,Y,d.pre,lambda,eta,n.foi,x,K,plot=FALSE,alpha 
 
     cv.d[j] <- Bspl.cv(Y = spadd.presmth.Legr.out$Y.lasso[,j],
                        X = X[,j],
-                       d.seq = 3:floor(d.pre*7/8),
+                       d.seq = 5:floor(d.pre*7/8),
                        n.folds = 5,
                        plot = FALSE)
 
