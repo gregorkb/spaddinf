@@ -1,6 +1,6 @@
 # spaddinf
 
-Block bootstrap methods for quantile regression in time series. 
+Fit two-step estimator for inference in sparse high-dimensional additive models
 
 This is an R package which accompanies the paper: 
 
