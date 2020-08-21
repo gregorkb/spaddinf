@@ -1,6 +1,6 @@
 # spaddinf
 
-Fit two-step estimator for inference in sparse high-dimensional additive models
+Fit two-step estimator for inference in sparse high-dimensional additive models.
 
 This is an R package which accompanies the paper: 
 
