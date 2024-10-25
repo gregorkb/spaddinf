@@ -1,69 +1,181 @@
-# The larinf package
+Using the semipadd2pop package
+------------------------------
 
-Perform least angle regression inference with the bootstrap.
+See the package documentation for details. Install with the R commands:
 
-<!-- This is an R package which accompanies the paper: -->
-<!-- Gregory, K. and Nordman, D. (2025+). Least angle regression inference. *In progress* -->
-<!-- Find the paper on the page https://imstat.org/journals-and-publications/annals-of-statistics/annals-of-statistics-future-papers/ -->
+`install.packages("devtools")`
 
-Install with the R commands:
+`devtools::install_github("gregorkb/semipadd2pop")`
 
-    install.packages("devtools")
-    devtools::install_github("gregorkb/larinf")
+Fitting a sparse nonparametric model to a single data set
+---------------------------------------------------------
 
-See the package documentation for details.
+The `semipadd` function fits a sparse semiparametric regression model to
+a single data set using user-specified tuning parameter values.
 
-# Illustration on example data set
+The following code generates a synthetic data set with continuous
+responses using the `get_semipadd_data` function and uses the `semipadd`
+function to fit a sparse semiparametric regression model. The
+`plot_semipadd` function plots the fitted nonparametric effects. The
+true effects are plotted with dashed lines.
 
-Compute and plot the least angle regression path for the response vector
-and design matrix in the data set `facetemp`, which is included in the
-`larinf` package:
+    data <- get_semipadd_data(n = 200, response = "continuous")
 
-    data(facetemp)
-    X <- facetemp$X
-    y <- facetemp$y
+    semipadd.out <- semipadd(Y = data$Y,
+                             X = data$X,
+                             nonparm = data$nonparm,
+                             response = "continuous",
+                             w = 1,
+                             d = 20,
+                             xi = 1,
+                             lambda.beta = 1,
+                             lambda.f = 1,
+                             tol = 1e-3,
+                             max.iter = 500)
 
-    lar_out <- lar(X,y)
-    plot(lar_out)
+    plot_semipadd(semipadd.out, 
+                  true.functions = list( f = data$f,
+                                         X = data$X))
 
-![](README_files/figure-markdown_strict/lar-1.png)
+![](README_files/figure-markdown_strict/semipadd-1.png)
 
-Obtain bootstrap confidence intervals for the entrance correlations and
-make a plot comparing inference on the least angle regression entrance
-correlations to classical inference on the regression coefficients:
+The `semipadd_cv_adapt` function fits a sparse semiparametric regression
+model to a single data set with the tuning parameter governing sparsity
+chosen via crossvalidation.
 
-    larinf_out <- larinf(X,y)
-    plot(larinf_out,omaadd=c(0,0,1,1))
+The following code generates a synthetic data set with binary responses
+using the `get_semipadd_data` function and uses the `semipadd_cv_adapt`
+function to fit a sparse semiparametric regression model. The tuning
+parameter governing sparsity is chosen via crossvalidation. The
+`plot_semipadd_cv_adapt` function plots the fitted nonparametric
+effects, showing with transparent curves the fitted effects under
+candidate tuning parameter values which were not chosen by
+crossvalidation. The true effects are plotted with dashed lines.
 
-![](README_files/figure-markdown_strict/larinf-1.png)
+    data <- get_semipadd_data(n = 1000, response = "binary")
 
-Print the estimated entrance correlations with 95% confidence intervals:
+    semipadd_cv_adapt.out <- semipadd_cv_adapt(Y = data$Y,
+                                               X = data$X,
+                                               nonparm = data$nonparm,
+                                               response = "binary",
+                                               w = 1,
+                                               d = 20,
+                                               xi = 1,
+                                               n.lambda = 10,
+                                               lambda.min.ratio = .01,
+                                               lambda.max.ratio = 1,
+                                               lambda.beta = 1,
+                                               lambda.f = 1,
+                                               tol = 1e-3,
+                                               maxiter = 1000,
+                                               report.prog = FALSE)
 
-    larinf_out
+    plot_semipadd_cv_adapt(semipadd_cv_adapt.out, 
+                           true.functions  = list( f = data$f,
+                                                   X = data$X))
 
-    ## In order of entrance:
-    ## 
-    ##           Entrance correlation   2.5%  97.5%
-    ## T_OR                     0.391  0.371  0.430
-    ## T_RC_Wet                 0.380  0.355  0.450
-    ## T_LC_Dry                 0.282  0.182  0.428
-    ## T_RC_Dry                 0.160 -0.056  0.326
-    ## T_atm                   -0.057 -0.069 -0.044
-    ## T_LC_Wet                 0.038 -0.079  0.078
-    ## White                   -0.038 -0.056 -0.024
-    ## Black                    0.033  0.016  0.057
-    ## T_FHTC                   0.026  0.003  0.056
-    ## Male                    -0.026 -0.041 -0.013
-    ## Asian                    0.018  0.007  0.027
-    ## Hisp                    -0.011 -0.037  0.001
-    ## Distance                 0.010 -0.005  0.028
-    ## Age31_40                -0.009 -0.026  0.009
-    ## Age21_25                 0.007 -0.014  0.020
-    ## T_FHLC                  -0.005 -0.033  0.000
-    ## Cosmetics               -0.005 -0.030  0.008
-    ## T_FHBC                   0.004 -0.033  0.008
-    ## Age26_30                -0.003 -0.017  0.017
-    ## Humidity                -0.003 -0.020  0.014
-    ## Age18_20                -0.002 -0.020  0.012
-    ## T_FHCC                  -0.001 -0.024  0.003
-    ## T_FHRC                   0.000 -0.038  0.005
+![](README_files/figure-markdown_strict/semipadd_cv_adapt-1.png)
+
+Combining data sets to fit two sparse semiparametric additive models
+--------------------------------------------------------------------
+
+The `semipadd2pop` function fits sparse semiparametric regression models
+to two data sets which have some covariates in common. The function
+requires the user to choose values of the parameters governing the
+sparsity of the fitted models and the penalization towards similar fits
+of common covariate effects.
+
+The following code generates two synthetic data sets with group testing
+responses using the `get_semipadd2pop_data` function and uses the
+`semipadd2pop` function to fit sparse semiparametric regression models.
+The `plot_semipadd2pop` function plots the fitted nonparametric effects
+in both data sets. The true effects are plotted with dashed lines.
+
+    data <- get_semipadd2pop_data(n1 = 1000, n2 = 800, response = "gt")
+
+    semipadd2pop.out <- semipadd2pop(Y1 = data$Y1,
+                                     X1 = data$X1,
+                                     nonparm1 = data$nonparm1,
+                                     Y2 = data$Y2,
+                                     X2 = data$X2,
+                                     nonparm2 = data$nonparm2,
+                                     response = "gt",
+                                     rho1 = 1,
+                                     rho2 = 1,
+                                     nCom = data$nCom,
+                                     d1 = 25,
+                                     d2 = 15,
+                                     xi = .5,
+                                     w1 = 1,
+                                     w2 = 1,
+                                     w = 1,
+                                     lambda.beta = .01,
+                                     lambda.f = .01,
+                                     eta.beta = .1,
+                                     eta.f = .1,
+                                     tol = 1e-3,
+                                     maxiter = 500)
+                                 
+    plot_semipadd2pop(semipadd2pop.out,
+                      true.functions = list(f1 = data$f1,
+                                            f2 = data$f2,
+                                            X1 = data$X1,
+                                            X2 = data$X2))
+
+![](README_files/figure-markdown_strict/semipadd2pop-1.png)
+
+The `semipadd2pop_cv_adapt` function fits sparse semiparametric
+regression models to two data sets with some common covariates. It
+choosing values of the tuning parameters governing sparsity and
+penalization towards similar fitting of common effects via
+crossvalidation.
+
+The following code generates two synthetic data sets with continuous
+responses using the `get_semipadd2pop_data` function and uses the
+`semipadd2pop_cv_adapt` function to fit a sparse semiparametric
+regression models for the two data sets. The tuning parameters governing
+sparsity and penalization towards similarity in the fitted effects of
+common covariates are chosen via crossvalidation. The
+`plot_semipadd2pop_cv_adapt` function plots the fitted nonparametric
+effects in each data set, showing with transparent curves the fitted
+effects under candidate tuning parameter values which were not chosen by
+crossvalidation. The true effects are plotted with dashed lines.
+
+    data <- get_semipadd2pop_data(n1 = 300, n2 = 200, response = "continuous")
+
+    semipadd2pop_cv_adapt.out <- semipadd2pop_cv_adapt(Y1 = data$Y1,
+                                                       X1 = data$X1,
+                                                       nonparm1 = data$nonparm1,
+                                                       Y2 = data$Y2,
+                                                       X2 = data$X2,
+                                                       nonparm2 = data$nonparm2,
+                                                       response = "continuous",
+                                                       rho1 = 2,
+                                                       rho2 = 1,
+                                                       w1 = 1,
+                                                       w2 = 1,
+                                                       w = 1,
+                                                       nCom = data$nCom,
+                                                       d1 = 25,
+                                                       d2 = 15,
+                                                       xi = .5,
+                                                       n.lambda = 5,
+                                                       n.eta = 5,
+                                                       lambda.min.ratio = 0.01,
+                                                       lambda.max.ratio = 0.10,
+                                                       n.folds = 5,
+                                                       lambda.beta = 1,
+                                                       lambda.f = 1,
+                                                       eta.beta = 1,
+                                                       eta.f = 1,
+                                                       tol = 1e-3,
+                                                       maxiter = 1000,
+                                                       report.prog = FALSE)
+
+    plot_semipadd2pop_cv_adapt(semipadd2pop_cv_adapt.out,
+                               true.functions = list(f1 = data$f1,
+                                                     f2 = data$f2,
+                                                     X1 = data$X1,
+                                                     X2 = data$X2))
+
+![](README_files/figure-markdown_strict/semipadd2pop_cv_adapt-1.png)
