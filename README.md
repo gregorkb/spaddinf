@@ -1,181 +1,212 @@
-Using the semipadd2pop package
-------------------------------
+# The spaddinf package
 
-See the package documentation for details. Install with the R commands:
+Fit two-step estimator for inference in sparse high-dimensional additive
+models.
 
-`install.packages("devtools")`
+This is an R package which accompanies the paper:
 
-`devtools::install_github("gregorkb/semipadd2pop")`
+Karl Gregory. Enno Mammen. Martin Wahl. “Statistical inference in sparse
+high-dimensional additive models.” Ann. Statist. 49 (3) 1514 - 1536,
+June 2021. <https://doi.org/10.1214/20-AOS2011>
 
-Fitting a sparse nonparametric model to a single data set
----------------------------------------------------------
+Install with the R commands:
 
-The `semipadd` function fits a sparse semiparametric regression model to
-a single data set using user-specified tuning parameter values.
+    install.packages("devtools")
+    devtools::install_github("gregorkb/spaddinf")
 
-The following code generates a synthetic data set with continuous
-responses using the `get_semipadd_data` function and uses the `semipadd`
-function to fit a sparse semiparametric regression model. The
-`plot_semipadd` function plots the fitted nonparametric effects. The
-true effects are plotted with dashed lines.
+# Introduction
 
-    data <- get_semipadd_data(n = 200, response = "continuous")
+*Y* = *f*<sub>1</sub>(*X*<sub>1</sub>) + … + *f*<sub>*q*</sub>(*X*<sub>*q*</sub>) + *ε*,
+where we assume 𝔼*Y* = 0 and 𝔼*f*<sub>*j*</sub>(*X*<sub>*j*</sub>) = 0
+for all *j* = 1, …, *q*.
 
-    semipadd.out <- semipadd(Y = data$Y,
-                             X = data$X,
-                             nonparm = data$nonparm,
-                             response = "continuous",
-                             w = 1,
-                             d = 20,
-                             xi = 1,
-                             lambda.beta = 1,
-                             lambda.f = 1,
-                             tol = 1e-3,
-                             max.iter = 500)
+The estimator of *f*<sub>*j*</sub> is constructed in two steps:
 
-    plot_semipadd(semipadd.out, 
-                  true.functions = list( f = data$f,
-                                         X = data$X))
+-   First, an undersmoothed presmoothing estimator
+    *f̂*<sub>*j*</sub><sup>(pre)</sup> of *f*<sub>*j*</sub> is obtained.
+-   Second, a less-wiggly smoother is applied to the evaluations of
+    *f̂*<sub>*j*</sub><sup>(pre)</sup> at the design points.
 
-![](README_files/figure-markdown_strict/semipadd-1.png)
+# Pre-smoother functions
 
-The `semipadd_cv_adapt` function fits a sparse semiparametric regression
-model to a single data set with the tuning parameter governing sparsity
-chosen via crossvalidation.
+The two functions `spadd.presmth.Bspl` and `spadd.presmth.Legr` are for
+obtaining the presmoothing estimators; they construct the presmoothing
+estimators from cubic B-spline and Legendre polynomial bases,
+respectively.
 
-The following code generates a synthetic data set with binary responses
-using the `get_semipadd_data` function and uses the `semipadd_cv_adapt`
-function to fit a sparse semiparametric regression model. The tuning
-parameter governing sparsity is chosen via crossvalidation. The
-`plot_semipadd_cv_adapt` function plots the fitted nonparametric
-effects, showing with transparent curves the fitted effects under
-candidate tuning parameter values which were not chosen by
-crossvalidation. The true effects are plotted with dashed lines.
+It is computationally expensive to compute the presmoothing estimator
+*f̂*<sub>*j*</sub><sup>(pre)</sup> for all *j* = 1, …, *q* when *q* is
+large. Therefore, both of these functions take an argument `n.foi` with
+which the user may specify the *number of functions of interest* for
+which to obtain the presmoothing estimator. For example, `n.foi = 5`
+will cause the presmoothing estimators for the first 5 components
+(corresponding to the first 5 columns of the design matrix) to be
+returned.
 
-    data <- get_semipadd_data(n = 1000, response = "binary")
+The following code uses the function `data_gen` to generate data
+according to the simulation design in Gregory et al. (2021) and then
+obtains the presmoothing estimators for the first 6 components. The
+argument `d.pre` is the number of basis functions to be used for fitting
+each component. The arguments `lambda` and `eta` are for the tuning
+parameters *λ* and *η* from the paper.
 
-    semipadd_cv_adapt.out <- semipadd_cv_adapt(Y = data$Y,
-                                               X = data$X,
-                                               nonparm = data$nonparm,
-                                               response = "binary",
-                                               w = 1,
-                                               d = 20,
-                                               xi = 1,
-                                               n.lambda = 10,
-                                               lambda.min.ratio = .01,
-                                               lambda.max.ratio = 1,
-                                               lambda.beta = 1,
-                                               lambda.f = 1,
-                                               tol = 1e-3,
-                                               maxiter = 1000,
-                                               report.prog = FALSE)
+The output is plotted with the function `plot_presmth_Bspl`.
 
-    plot_semipadd_cv_adapt(semipadd_cv_adapt.out, 
-                           true.functions  = list( f = data$f,
-                                                   X = data$X))
+    library(spaddinf)
 
-![](README_files/figure-markdown_strict/semipadd_cv_adapt-1.png)
+    ## Loading required package: splines
 
-Combining data sets to fit two sparse semiparametric additive models
---------------------------------------------------------------------
+    ## Loading required package: grplasso
 
-The `semipadd2pop` function fits sparse semiparametric regression models
-to two data sets which have some covariates in common. The function
-requires the user to choose values of the parameters governing the
-sparsity of the fitted models and the penalization towards similar fits
-of common covariate effects.
+    # generate some data as in Gregory et al. (2020)
+    data <- data_gen(n = 200, q = 10, r = .5)
 
-The following code generates two synthetic data sets with group testing
-responses using the `get_semipadd2pop_data` function and uses the
-`semipadd2pop` function to fit sparse semiparametric regression models.
-The `plot_semipadd2pop` function plots the fitted nonparametric effects
-in both data sets. The true effects are plotted with dashed lines.
+    # obtain presmoothing estimators for first 6 components
+    spadd.presmth.Bspl.out <- spadd.presmth.Bspl(X = data$X,
+                                                 Y = data$Y,
+                                                 d.pre = 20,
+                                                 lambda = 1,
+                                                 eta = 3,
+                                                 n.foi = 6)
+    # make plots
+    plot_presmth_Bspl(spadd.presmth.Bspl.out,
+                     true.functions = list( f = data$f,
+                                            X = data$X))
 
-    data <- get_semipadd2pop_data(n1 = 1000, n2 = 800, response = "gt")
+![](README_files/figure-markdown_strict/unnamed-chunk-2-1.png)
 
-    semipadd2pop.out <- semipadd2pop(Y1 = data$Y1,
-                                     X1 = data$X1,
-                                     nonparm1 = data$nonparm1,
-                                     Y2 = data$Y2,
-                                     X2 = data$X2,
-                                     nonparm2 = data$nonparm2,
-                                     response = "gt",
-                                     rho1 = 1,
-                                     rho2 = 1,
-                                     nCom = data$nCom,
-                                     d1 = 25,
-                                     d2 = 15,
-                                     xi = .5,
-                                     w1 = 1,
-                                     w2 = 1,
-                                     w = 1,
-                                     lambda.beta = .01,
-                                     lambda.f = .01,
-                                     eta.beta = .1,
-                                     eta.f = .1,
-                                     tol = 1e-3,
-                                     maxiter = 500)
-                                 
-    plot_semipadd2pop(semipadd2pop.out,
-                      true.functions = list(f1 = data$f1,
-                                            f2 = data$f2,
-                                            X1 = data$X1,
-                                            X2 = data$X2))
+The following code does the same as the previous code, but constructs
+the presmoothing estimators from Legendre polynomial bases. Note the
+additional argument `K` for choosing the order of the Legendre
+polynomials; the default is `K=1`, which results in piecewise linear
+functions.
 
-![](README_files/figure-markdown_strict/semipadd2pop-1.png)
+    # obtain presmoothing estimators for first 6 components
+    spadd.presmth.Legr.out <- spadd.presmth.Legr(X = data$X,
+                                                 Y = data$Y,
+                                                 d.pre = 20,
+                                                 lambda = 1,
+                                                 eta = 3,
+                                                 n.foi = 6,
+                                                 K = 1)
+    # make plots
+    plot_presmth_Legr(spadd.presmth.Legr.out,
+                     true.functions = list( f = data$f,
+                                            X = data$X))
 
-The `semipadd2pop_cv_adapt` function fits sparse semiparametric
-regression models to two data sets with some common covariates. It
-choosing values of the tuning parameters governing sparsity and
-penalization towards similar fitting of common effects via
-crossvalidation.
+![](README_files/figure-markdown_strict/unnamed-chunk-3-1.png)
 
-The following code generates two synthetic data sets with continuous
-responses using the `get_semipadd2pop_data` function and uses the
-`semipadd2pop_cv_adapt` function to fit a sparse semiparametric
-regression models for the two data sets. The tuning parameters governing
-sparsity and penalization towards similarity in the fitted effects of
-common covariates are chosen via crossvalidation. The
-`plot_semipadd2pop_cv_adapt` function plots the fitted nonparametric
-effects in each data set, showing with transparent curves the fitted
-effects under candidate tuning parameter values which were not chosen by
-crossvalidation. The true effects are plotted with dashed lines.
+# Cross-validation for pre-smoother
 
-    data <- get_semipadd2pop_data(n1 = 300, n2 = 200, response = "continuous")
+The functions `spadd.presmth.Bspl.cv` and `spadd.presmth.Legr.cv` make
+choices of the tuning parameters *λ* and *η* from grids of values, while
+constructing the presmoothing estimators from cubic B-spline and
+Legendre polynomial bases, respectively.
 
-    semipadd2pop_cv_adapt.out <- semipadd2pop_cv_adapt(Y1 = data$Y1,
-                                                       X1 = data$X1,
-                                                       nonparm1 = data$nonparm1,
-                                                       Y2 = data$Y2,
-                                                       X2 = data$X2,
-                                                       nonparm2 = data$nonparm2,
-                                                       response = "continuous",
-                                                       rho1 = 2,
-                                                       rho2 = 1,
-                                                       w1 = 1,
-                                                       w2 = 1,
-                                                       w = 1,
-                                                       nCom = data$nCom,
-                                                       d1 = 25,
-                                                       d2 = 15,
-                                                       xi = .5,
-                                                       n.lambda = 5,
-                                                       n.eta = 5,
-                                                       lambda.min.ratio = 0.01,
-                                                       lambda.max.ratio = 0.10,
+Rather than searching over a 2-dimensional grid for the best (*λ*,*η*)
+pair, these functions first select *λ* in order to minimize
+crossvalidation prediction error for
+*f̂*<sub>1</sub><sup>*L*</sup> + … + *f̂*<sub>*q*</sub><sup>*L*</sup> (see
+section 3.1 of the paper), and then select *η* by minimizing the average
+crossvalidation prediction error for
+*Π̂*<sub>−1</sub><sup>*L*</sup>*b*<sub>*j*1</sub>, …, *Π̂*<sub>−1</sub><sup>*L*</sup>*b*<sub>*j**d*</sub>,
+where *d* is `d.pre`, the number of basis functions (see Section 3.3 of
+the paper). To reduce computation time, *η* is only chosen for *j* = 1
+(this could be easily changed in the code).
+
+The user specifies by the arguments `n.lambda` and `n.eta` the number of
+*λ* and *η* values to consider. Grids of values are constructed on a
+logarithmic scale (see code).
+
+The following code generates data according to the simulation design in
+Gregory et al. (2020) and uses the function `spadd.presmth.Bspl.cv` to
+choose *λ* and *η* using crossvalidation for the cubic B-spline
+presmoother. The crossvalidation code takes a couple of minutes to run.
+The values chosen in crossvalidation are then given to the function
+`spadd.presmth.Bspl` so that the presmoothing estimator can be obtained.
+Some plots of the output are generated.
+
+    # generate some data as in Gregory et al. (2020)
+    data <- data_gen(n = 150,q = 30,r = .9)
+
+    # get CV choices of lambda and eta: takes a couple of minutes to run
+    spadd.presmth.Bspl.cv.out <- spadd.presmth.Bspl.cv(X = data$X,
+                                                       Y = data$Y,
+                                                       d.pre = 15,
+                                                       n.lambda = 25,
+                                                       n.eta = 25,
                                                        n.folds = 5,
-                                                       lambda.beta = 1,
-                                                       lambda.f = 1,
-                                                       eta.beta = 1,
-                                                       eta.f = 1,
-                                                       tol = 1e-3,
-                                                       maxiter = 1000,
-                                                       report.prog = FALSE)
+                                                       plot = TRUE)
 
-    plot_semipadd2pop_cv_adapt(semipadd2pop_cv_adapt.out,
-                               true.functions = list(f1 = data$f1,
-                                                     f2 = data$f2,
-                                                     X1 = data$X1,
-                                                     X2 = data$X2))
+    ## [1] "lambda fold: 1"
+    ## [1] "lambda fold: 2"
+    ## [1] "lambda fold: 3"
+    ## [1] "lambda fold: 4"
+    ## [1] "lambda fold: 5"
+    ## [1] "eta fold: 1"
+    ## [1] "eta fold: 2"
+    ## [1] "eta fold: 3"
+    ## [1] "eta fold: 4"
+    ## [1] "eta fold: 5"
 
-![](README_files/figure-markdown_strict/semipadd2pop_cv_adapt-1.png)
+![](README_files/figure-markdown_strict/unnamed-chunk-4-1.png)![](README_files/figure-markdown_strict/unnamed-chunk-4-2.png)
+
+    # obtain presmoothing estimators for first 6 components                                                    
+    spadd.presmth.Bspl.out <- spadd.presmth.Bspl(X = data$X,
+                                                 Y = data$Y,
+                                                 d.pre = 20,
+                                                 lambda = spadd.presmth.Bspl.cv.out$cv.lambda,
+                                                 eta = spadd.presmth.Bspl.cv.out$cv.eta,
+                                                 n.foi = 6)
+    # make plots
+    plot_presmth_Bspl(spadd.presmth.Bspl.out)
+
+![](README_files/figure-markdown_strict/unnamed-chunk-4-3.png)
+
+# Two-step estimator
+
+The functions `spadd.presmth.Bspl.Bspl` and `spadd.presmth.Legr.Bspl`
+compute the two-step estimators when the presmoothers are constructed
+with cubic B-spline and Legendre polynomial bases, respectively, with
+the resmoothers constructed from cubic B-spline bases.
+
+The user provides `d.pre`, which is as before, and, optionally, `d.re`,
+which is the number of functions in the bases used for resmoothing. If
+`d.re = NULL`, then this is chosen using a crossvalidation procedure.
+Values of *λ* and *η* for constructing the presmoothers must be
+provided. Setting `plot = TRUE` produces plots of each resmoother with
+(1−*α*)100% pointwise confidence intervals of the form in equation (14)
+of the paper, where *α* is specified by the argument `alpha`. The red
+circles in the plots are the values of the presmoothing estimators at
+the design points.
+
+The code below demonstrates this.
+
+    # generate some data as in Gregory et al. (2020)
+    data <- data_gen(n = 200, q = 50, r = .9)
+
+    # get two-step estimator with B-spline presmoother and B-spline resmoother
+    preresmth.Bspl.Bspl.out <- preresmth.Bspl.Bspl(Y = data$Y,
+                                                   X = data$X,
+                                                   d.pre = 20,
+                                                   d.re = 10,
+                                                   lambda = 1,
+                                                   eta = 3,
+                                                   n.foi = 2,
+                                                   plot = TRUE,
+                                                   alpha = 0.05)
+
+![](README_files/figure-markdown_strict/unnamed-chunk-5-1.png)![](README_files/figure-markdown_strict/unnamed-chunk-5-2.png)
+
+    # get two-step estimator with Legendre polynomial presmoother and B-spline resmoother
+    preresmth.Legr.Bspl.out <- preresmth.Legr.Bspl(Y = data$Y,
+                                                   X = data$X,
+                                                   d.pre = 20,
+                                                   d.re = 10,
+                                                   lambda = 1,
+                                                   eta = 3,
+                                                   n.foi = 2,
+                                                   plot = TRUE,
+                                                   alpha = 0.05)
+
+![](README_files/figure-markdown_strict/unnamed-chunk-5-3.png)![](README_files/figure-markdown_strict/unnamed-chunk-5-4.png)
