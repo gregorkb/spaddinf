@@ -1,0 +1,60 @@
+---
+title: "The larinf package"
+author: "Karl Gregory"
+date: "`r Sys.Date()`"
+output: md_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# The larinf package
+
+Perform least angle regression inference with the bootstrap.
+
+<!-- This is an R package which accompanies the paper: -->
+
+<!-- Gregory, K. and Nordman, D. (2025+). Least angle regression inference. *In progress* -->
+
+<!-- Find the paper on the page https://imstat.org/journals-and-publications/annals-of-statistics/annals-of-statistics-future-papers/ -->
+
+Install with the R commands:
+
+```{r echo = FALSE}
+library(larinf)
+```
+
+
+```{r eval = FALSE}
+install.packages("devtools")
+devtools::install_github("gregorkb/larinf")
+```
+
+See the package documentation for details. 
+
+# Illustration on example data set
+
+Compute and plot the least angle regression path for the response vector and design matrix in the data set `facetemp`, which is included in the `larinf` package:
+
+```{r lar}
+data(facetemp)
+X <- facetemp$X
+y <- facetemp$y
+
+lar_out <- lar(X,y)
+plot(lar_out)
+```
+
+
+Obtain bootstrap confidence intervals for the entrance correlations and make a plot comparing inference on the least angle regression entrance correlations to classical inference on the regression coefficients:
+```{r larinf}
+larinf_out <- larinf(X,y)
+plot(larinf_out,omaadd=c(0,0,1,1))
+```
+
+
+Print the estimated entrance correlations with 95\% confidence intervals:
+```{r larinf_print}
+larinf_out
+```
